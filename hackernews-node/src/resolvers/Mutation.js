@@ -26,6 +26,7 @@ async function signup(parent, args, context, info) {
 async function login(parent, args, context, info) {
 
     const user = await context.prisma.user({ email: args.email })
+
     if (!user) {
         throw new Error('No such user found')
     }
@@ -43,9 +44,27 @@ async function login(parent, args, context, info) {
     }
 }
 
+async function vote(parent, args, context, info) {
+
+    const userId = getUserId(context)
+    const linkExists = await context.prisma.$exists.vote({
+        user: { id: userId },
+        link: { id: args.linkId },
+    })
+
+    if (linkExists) {
+        throw new Error(`Already voted for link: ${args.linkId}`)
+    }
+
+    return context.prisma.createVote({
+        user: { connect: { id: userId } },
+        link: { connect: { id: args.linkId } }
+    })
+}
 
 module.exports = {
+    post,
     signup,
     login,
-    post
+    vote,
 }
